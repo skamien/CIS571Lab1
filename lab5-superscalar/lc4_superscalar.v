@@ -18,23 +18,23 @@ module lc4_processor(input wire         clk,             // main clock
 
                      // testbench signals (always emitted from the WB stage)
                      output wire [ 1:0] test_stall_A,        // is this a stall cycle?  (0: no stall,
-                     output wire [ 1:0] test_stall_B,        // 1: pipeline stall, 2: branch stall, 3: load stall)
+                     output wire [ 1:0] test_stall_B,        // 1: pipeline stall, 2: branch stall, 3: load stall) : DONE
 
-                     output wire [15:0] test_cur_pc_A,       // program counter
+                     output wire [15:0] test_cur_pc_A,       // program counter: DONE
                      output wire [15:0] test_cur_pc_B,
-                     output wire [15:0] test_cur_insn_A,     // instruction bits
+                     output wire [15:0] test_cur_insn_A,     // instruction bits: DONE
                      output wire [15:0] test_cur_insn_B,
-                     output wire        test_regfile_we_A,   // register file write-enable
+                     output wire        test_regfile_we_A,   // register file write-enable : decode
                      output wire        test_regfile_we_B,
-                     output wire [ 2:0] test_regfile_wsel_A, // which register to write
+                     output wire [ 2:0] test_regfile_wsel_A, // which register to write : decode
                      output wire [ 2:0] test_regfile_wsel_B,
                      output wire [15:0] test_regfile_data_A, // data to write to register file
                      output wire [15:0] test_regfile_data_B,
-                     output wire        test_nzp_we_A,       // nzp register write enable
+                     output wire        test_nzp_we_A,       // nzp register write enable : decode
                      output wire        test_nzp_we_B,
-                     output wire [ 2:0] test_nzp_new_bits_A, // new nzp bits
+                     output wire [ 2:0] test_nzp_new_bits_A, // new nzp bits : get from regfile_data
                      output wire [ 2:0] test_nzp_new_bits_B,
-                     output wire        test_dmem_we_A,      // data memory write enable
+                     output wire        test_dmem_we_A,      // data memory write enable : decode
                      output wire        test_dmem_we_B,
                      output wire [15:0] test_dmem_addr_A,    // address to read/write from/to memory
                      output wire [15:0] test_dmem_addr_B,
@@ -74,20 +74,51 @@ module lc4_processor(input wire         clk,             // main clock
 	Nbit_reg #(16, 16'd0) AW_insn_reg (.in(AM_insn_out), .out(AW_insn_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
 	Nbit_reg #(16, 16'd0) BW_insn_reg (.in(BM_insn_out), .out(BW_insn_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
 	
+	
+	// TODO: implement stall logic
 	// Stall registers:
 	wire [1:0] next_AD_stall, next_BD_stall, AD_stall, BD_stall, AX_stall_in, BX_stall_in, AX_stall, BX_stall, AM_stall, BM_stall, AW_stall, BW_stall;
-   Nbit_reg #(2, 2'd2) AD_stall_reg (.in(next_AD_stall), .out(AD_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
-   Nbit_reg #(2, 2'd2) BD_stall_reg (.in(next_BD_stall), .out(BD_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
-   Nbit_reg #(2, 2'd2) AX_stall_reg (.in(AX_stall_in), .out(AX_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
-   Nbit_reg #(2, 2'd2) BX_stall_reg (.in(BX_stall_in), .out(BX_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
-   Nbit_reg #(2, 2'd2) AM_stall_reg (.in(AX_stall), .out(AM_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
-   Nbit_reg #(2, 2'd2) BM_stall_reg (.in(BX_stall), .out(BM_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
-   Nbit_reg #(2, 2'd2) AW_stall_reg (.in(AM_stall), .out(AW_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
-   Nbit_reg #(2, 2'd2) BW_stall_reg (.in(BM_stall), .out(BW_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+    Nbit_reg #(2, 2'd2) AD_stall_reg (.in(next_AD_stall), .out(AD_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+    Nbit_reg #(2, 2'd2) BD_stall_reg (.in(next_BD_stall), .out(BD_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+    Nbit_reg #(2, 2'd2) AX_stall_reg (.in(AX_stall_in), .out(AX_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+    Nbit_reg #(2, 2'd2) BX_stall_reg (.in(BX_stall_in), .out(BX_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+    Nbit_reg #(2, 2'd2) AM_stall_reg (.in(AX_stall), .out(AM_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+    Nbit_reg #(2, 2'd2) BM_stall_reg (.in(BX_stall), .out(BM_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+    Nbit_reg #(2, 2'd2) AW_stall_reg (.in(AM_stall), .out(AW_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+    Nbit_reg #(2, 2'd2) BW_stall_reg (.in(BM_stall), .out(BW_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
 	
-
-
-
+	// TODO: add alu and bypasses
+	// Data registers:
+	wire [15:0] AX_rs_in, BX_rs_in, AX_rt_in, BX_rt_in, AX_rs_out, BX_rs_out, AX_rt_out, BX_rt_out, 
+				AX_alu_out, BX_alu_out, AM_dmem_addr, BM_dmem_addr, AM_dmem_data, BM_dmem_data
+				AW_rd_in, BW_rd_in, AW_rd_out, BW_rd_out;
+	Nbit_reg #(16, 16'd0) AX_rs_reg (.in(AX_rs_in), .out(AX_rs_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) BX_rs_reg (.in(BX_rs_in), .out(BX_rs_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) AX_rt_reg (.in(AX_rt_in), .out(AX_rt_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) BX_rt_reg (.in(BX_rt_in), .out(BX_rt_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) AM_alu_reg (.in(AX_alu_out), .out(AM_dmem_addr), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) BM_alu_reg (.in(BX_alu_out), .out(BM_dmem_addr), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) AM_rt_reg (.in(AW_rd_in), .out(AW_rd_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) BM_rt_reg (.in(BW_rd_in), .out(BW_rd_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	
+	// Dmem registers (for testing):
+	wire [15:0] AM_dmem_data, BM_dmem_data, AW_dmem_data, BW_dmem_data, AW_dmem_addr, BW_dmem_addr;
+	Nbit_reg #(16, 16'd0) AW_dmem_data_reg (.in(AM_dmem_data), .out(AW_dmem_data), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+    Nbit_reg #(16, 16'd0) BW_dmem_data_reg (.in(BM_dmem_data), .out(BW_dmem_data), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+    Nbit_reg #(16, 16'd0) AW_dmem_addr_reg (.in(AM_dmem_addr),  .out(AW_dmem_addr), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+    Nbit_reg #(16, 16'd0) BW_dmem_addr_reg (.in(BM_dmem_addr),  .out(BW_dmem_addr), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	
+	
+	assign test_cur_pc_A = AW_pc_out;
+	assign test_cur_pc_B = BW_pc_out;
+	assign test_cur_insn_A = AW_insn_out;
+	assign test_cur_insn_B = BW_insn_out;
+	assign test_stall_A = AW_stall;
+	assign test_stall_B = BW_stall;
+	assign test_dmem_data_A = AW_dmem_data;
+	assign test_dmem_data_B = BW_dmem_data;
+	assign test_dmem_addr_A = AW_dmem_addr;
+	assign test_dmem_addr_B = BW_dmem_addr;
 
 
    /* Add $display(...) calls in the always block below to
