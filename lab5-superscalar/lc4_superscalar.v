@@ -47,7 +47,44 @@ module lc4_processor(input wire         clk,             // main clock
                      );
 
    /***  YOUR CODE HERE ***/
-
+   
+	// PC registers:
+	wire [15:0] next_pc, next_pc_plus, AF_pc_out, BF_pc_out, AD_pc_in, BD_pc_in, AD_pc_out, BD_pc_out, 
+				AX_pc_in, BX_pc_in, AX_pc_out, BX_pc_out, AM_pc_out, BM_pc_out, AW_pc_out, BW_pc_out;
+	Nbit_reg #(16, 16'd0) AF_pc_reg (.in(next_pc), .out(AF_pc_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) BF_pc_reg (.in(next_pc_plus), .out(BF_pc_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) AD_pc_reg (.in(AD_pc_in), .out(AD_pc_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) BD_pc_reg (.in(BD_pc_in), .out(BD_pc_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) AX_pc_reg (.in(AX_pc_in), .out(AX_pc_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) BX_pc_reg (.in(BX_pc_in), .out(BX_pc_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) AM_pc_reg (.in(AX_pc_out), .out(AM_pc_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) BM_pc_reg (.in(BX_pc_out), .out(BM_pc_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) AW_pc_reg (.in(AM_pc_out), .out(AW_pc_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) BW_pc_reg (.in(BM_pc_out), .out(BW_pc_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	
+	// Instruction registers:
+	wire [15:0] AD_insn_in, BD_insn_in, AF_insn_out, BF_insn_out, AD_insn_out, BD_insn_out, AX_insn_in, BX_insn_in, 
+				AX_insn_out, BX_insn_out, AM_insn_out, BM_insn_out, AW_insn_out, BW_insn_out;
+	Nbit_reg #(16, 16'd0) AD_insn_reg (.in(AD_insn_in), .out(AD_insn_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) BD_insn_reg (.in(BD_insn_in), .out(BD_insn_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) AX_insn_reg (.in(AX_insn_in), .out(AX_insn_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) BX_insn_reg (.in(BX_insn_in), .out(BX_insn_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) AM_insn_reg (.in(AX_insn_out), .out(AM_insn_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) BM_insn_reg (.in(BX_insn_out), .out(BM_insn_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) AW_insn_reg (.in(AM_insn_out), .out(AW_insn_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	Nbit_reg #(16, 16'd0) BW_insn_reg (.in(BM_insn_out), .out(BW_insn_out), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	
+	// Stall registers:
+	wire [1:0] next_AD_stall, next_BD_stall, AD_stall, BD_stall, AX_stall_in, BX_stall_in, AX_stall, BX_stall, AM_stall, BM_stall, AW_stall, BW_stall;
+   Nbit_reg #(2, 2'd2) AD_stall_reg (.in(next_AD_stall), .out(AD_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+   Nbit_reg #(2, 2'd2) BD_stall_reg (.in(next_BD_stall), .out(BD_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+   Nbit_reg #(2, 2'd2) AX_stall_reg (.in(AX_stall_in), .out(AX_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+   Nbit_reg #(2, 2'd2) BX_stall_reg (.in(BX_stall_in), .out(BX_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+   Nbit_reg #(2, 2'd2) AM_stall_reg (.in(AX_stall), .out(AM_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+   Nbit_reg #(2, 2'd2) BM_stall_reg (.in(BX_stall), .out(BM_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+   Nbit_reg #(2, 2'd2) AW_stall_reg (.in(AM_stall), .out(AW_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+   Nbit_reg #(2, 2'd2) BW_stall_reg (.in(BM_stall), .out(BW_stall), .clk(clk), .we(1'b1), .gwe(gwe), .rst(rst));
+	
 
 
 
